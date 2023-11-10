@@ -1,22 +1,26 @@
 package main
 
 import (
-	"archive/zip"
+	"archive/tar"
+	"compress/gzip"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// Zip - Create .zip file and add dirs and files that match glob patterns
-func Zip(filename string, artifacts []string) error {
+func Tar(filename string, artifacts []string) error {
 	outFile, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer outFile.Close()
 
-	archive := zip.NewWriter(outFile)
-	defer archive.Close()
+	gzw := gzip.NewWriter(outFile)
+	defer gzw.Close()
+
+	tw := tar.NewWriter(gzw)
+	defer tw.Close()
 
 	for _, pattern := range artifacts {
 		matches, err := filepath.Glob(pattern)
@@ -25,33 +29,55 @@ func Zip(filename string, artifacts []string) error {
 		}
 
 		for _, match := range matches {
-			filepath.Walk(match, func(path string, info os.FileInfo, err error) error {
-				header, err := zip.FileInfoHeader(info)
+			filepath.Walk(match, func(file string, fi os.FileInfo, err error) error {
+				// return on any error
 				if err != nil {
 					return err
 				}
 
-				header.Name = path
-				header.Method = zip.Deflate
+				// for symbolic link only add to the tar file list
+				link := fi.Name()
+				if fi.Mode()&os.ModeSymlink != 0 {
+					var err error
+					link, err = os.Readlink(file)
+					if err != nil {
+						return err
+					}
+				}
 
-				writter, err := archive.CreateHeader(header)
+				// create a new dir/file header
+				header, err := tar.FileInfoHeader(fi, link)
 				if err != nil {
 					return err
 				}
 
-				if info.IsDir() {
-					return nil
-				}
+				// update the name to correctly reflect the desired destination when untaring
+				header.Name = strings.TrimPrefix(strings.Replace(file, match, "", -1), string(filepath.Separator))
 
-				file, err := os.Open(path)
-				if err != nil {
+				// write the header
+				if err := tw.WriteHeader(header); err != nil {
 					return err
 				}
-				defer file.Close()
 
-				_, err = io.Copy(writter, file)
+				// copy file content only for regular files
+				if fi.Mode().IsRegular() {
+					// open files for taring
+					f, err := os.Open(file)
+					if err != nil {
+						return err
+					}
 
-				return err
+					// copy file data into tar writer
+					if _, err := io.Copy(tw, f); err != nil {
+						return err
+					}
+
+					// manually close here after each file operation; defering would cause each file close
+					// to wait until all operations have completed.
+					f.Close()
+				}
+
+				return nil
 			})
 		}
 	}
@@ -59,40 +85,89 @@ func Zip(filename string, artifacts []string) error {
 	return nil
 }
 
-// Unzip - Unzip all files and directories inside .zip file
-func Unzip(filename string) error {
-	reader, err := zip.OpenReader(filename)
+func Untar(filename string) error {
+	f, err := os.Open(filename)
+	dst := "."
+
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer f.Close()
 
-	for _, file := range reader.File {
-		if err := os.MkdirAll(filepath.Dir(file.Name), os.ModePerm); err != nil {
+	gzr, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+
+	for {
+		header, err := tr.Next()
+
+		switch {
+
+		// if no more files are found return
+		case err == io.EOF:
+			return nil
+
+		// return any other error
+		case err != nil:
 			return err
-		}
 
-		if file.FileInfo().IsDir() {
+		// if the header is nil, just skip it (not sure how this happens)
+		case header == nil:
 			continue
 		}
 
-		outFile, err := os.OpenFile(file.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		if err != nil {
-			return err
-		}
+		// the target location where the dir/file should be created
+		target := filepath.Join(dst, header.Name)
 
-		currentFile, err := file.Open()
-		if err != nil {
-			return err
-		}
+		// check the file type
+		switch header.Typeflag {
 
-		if _, err = io.Copy(outFile, currentFile); err != nil {
-			return err
-		}
+		// if its a dir and it doesn't exist create it
+		case tar.TypeDir:
+			if _, err := os.Stat(target); err != nil {
+				if err := os.MkdirAll(target, 0755); err != nil {
+					return err
+				}
+			}
 
-		outFile.Close()
-		currentFile.Close()
+		// if it's a file create it
+		case tar.TypeReg:
+			dir := filepath.Dir(target)
+			if _, err := os.Stat(dir); err != nil {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return err
+				}
+			}
+
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+
+			// copy over contents
+			if _, err := io.Copy(f, tr); err != nil {
+				return err
+			}
+
+			// manually close here after each file operation; defering would cause each file close
+			// to wait until all operations have completed.
+			f.Close()
+
+		case tar.TypeSymlink:
+			dir := filepath.Dir(target)
+			if _, err := os.Stat(dir); err != nil {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return err
+				}
+			}
+
+			if err := os.Symlink(header.Linkname, target); err != nil {
+				return err
+			}
+		}
 	}
-
-	return nil
 }

@@ -22,7 +22,7 @@ func main() {
 			log.Fatal("No artifacts patterns provided")
 		}
 
-		if err := Zip(action.Key, action.Artifacts); err != nil {
+		if err := Tar(action.Key, action.Artifacts); err != nil {
 			log.Fatal(err)
 		}
 
@@ -41,7 +41,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			if err := Unzip(action.Key); err != nil {
+			if err := Untar(action.Key); err != nil {
 				log.Fatal(err)
 			}
 		} else {
