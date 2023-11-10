@@ -86,3 +86,4 @@ jobs:
           body: ""
           draft: false
           prerelease: ${{ steps.vars.outputs.is-pre-release }}
+
