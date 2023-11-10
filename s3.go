@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"os"
 
@@ -43,15 +44,30 @@ func GetObject(key, bucket string) error {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	session := s3.NewFromConfig(cfg)
 
-	i := &s3.GetObjectInput{
+	result, err := session.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
+	})
+	if err != nil {
+		log.Printf("Couldn't get object %v:%v: %v\n", bucket, key, err)
+		return err
+	}
+	defer result.Body.Close()
+	file, err := os.Create(key)
+	if err != nil {
+		log.Printf("Couldn't create file %v: %v\n", key, err)
+		return err
+	}
+	defer file.Close()
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		log.Printf("Couldn't read object body from %v: %v\n", key, err)
 	}
 
-	size, err := session.GetObject(context.TODO(), i)
-
-	log.Printf("Cache downloaded successfully, containing %d bytes", size)
-
+	_, err = file.Write(body)
+	if err == nil {
+		log.Printf("Cache downloaded successfully, containing %d bytes", result.ContentLength)
+	}
 	return err
 }
 
