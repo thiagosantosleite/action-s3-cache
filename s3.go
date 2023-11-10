@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -86,6 +87,9 @@ func ObjectExists(key, bucket string) (bool, error) {
 	}
 
 	if _, err = session.HeadObject(context.TODO(), i); err != nil {
+		fmt.Println("-------------")
+		fmt.Println(err.Error())
+		fmt.Println("-------------")
 		var nsk *types.NoSuchKey
 		if errors.As(err, &nsk) {
 			return false, nil
