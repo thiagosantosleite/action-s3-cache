@@ -76,7 +76,9 @@ func DeleteObject(key, bucket string) error {
 // ObjectExists - Verify if object exists in s3
 func ObjectExists(key, bucket string) (bool, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
-	session := s3.NewFromConfig(cfg)
+	session := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
 
 	i := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
