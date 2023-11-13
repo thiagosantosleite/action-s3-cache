@@ -5,20 +5,15 @@ GitHub Action that allows you to cache build artifacts to S3
 
 ## Prerequisites
 - An AWS account. [Sign up here](https://aws.amazon.com/pt/resources/create-account/).
-- AWS Access and Secret Keys. More info [here](https://aws.amazon.com/pt/premiumsupport/knowledge-center/create-access-key/).
-- An empty S3 bucket.
 
 ## Usage
 
-Set up the following AWS credentials as secrets in your repository, `AWS_ACCESS_KEY_ID` and `AWS_ACCESS_KEY_ID`
-
-S3 Cache for GitHub Actions supports builds on Linux, Windows and MacOS.
 
 ### Archiving artifacts
 
 ```yml
 - name: Save cache
-  uses: leroy-merlin-br/action-s3-cache@v1
+  uses: thiagosantosleite/action-s3-cache@v1
   with:
     action: put
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -36,7 +31,7 @@ S3 Cache for GitHub Actions supports builds on Linux, Windows and MacOS.
 
 ```yml
 - name: Retrieve cache
-  uses: leroy-merlin-br/action-s3-cache@v1
+  uses: thiagosantosleite/action-s3-cache@v1
   with:
     action: get
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -50,7 +45,7 @@ S3 Cache for GitHub Actions supports builds on Linux, Windows and MacOS.
 
 ```yml
 - name: Clear cache
-  uses: leroy-merlin-br/action-s3-cache@v1
+  uses: thiagosantosleite/action-s3-cache@v1
   with:
     action: delete
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -70,7 +65,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   uses: actions/checkout@v2
 
 - name: Retrieve cache
-  uses: leroy-merlin-br/action-s3-cache@v1
+  uses: thiagosantosleite/action-s3-cache@v1
   with:
     action: get
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -83,7 +78,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   run: yarn
 
 - name: Save cache
-  uses: leroy-merlin-br/action-s3-cache@v1
+  uses: thiagosantosleite/action-s3-cache@v1
   with:
     action: put
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -94,7 +89,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
     key: ${{ hashFiles('yarn.lock') }}
     artifacts: |
       node_modules/*
-``
+```
 
 ## Deploy a new version
 
@@ -105,5 +100,5 @@ env GOOS=linux GOARCH=amd64 go build -o dist/linux
 
 - Push the binary and changes to github
 
-- Usually is required to update the tag or create a new tag
+- Usually is required to update the branch or create a new branch
 
