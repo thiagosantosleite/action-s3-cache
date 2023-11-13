@@ -94,4 +94,16 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
     key: ${{ hashFiles('yarn.lock') }}
     artifacts: |
       node_modules/*
+``
+
+## Deploy a new version
+
+- Build the binary 
 ```
+env GOOS=linux GOARCH=amd64 go build -o dist/linux
+```
+
+- Push the binary and changes to github
+
+- Usually is required to update the tag or create a new tag
+
