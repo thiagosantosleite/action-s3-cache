@@ -3,6 +3,11 @@
 
 GitHub Action that allows you to cache build artifacts to S3
 
+It is a fork from [leroy-merlin-br/action-s3-cache]https://github.com/leroy-merlin-br/action-s3-cache.
+Changes:
+- Use tar and untar instead of zip
+- Upgrade golang version
+
 ## Prerequisites
 - An AWS account. [Sign up here](https://aws.amazon.com/pt/resources/create-account/).
 
@@ -13,7 +18,7 @@ GitHub Action that allows you to cache build artifacts to S3
 
 ```yml
 - name: Save cache
-  uses: thiagosantosleite/action-s3-cache@v1
+  uses: everest/action-s3-cache@v2
   with:
     action: put
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -31,7 +36,7 @@ GitHub Action that allows you to cache build artifacts to S3
 
 ```yml
 - name: Retrieve cache
-  uses: thiagosantosleite/action-s3-cache@v1
+  uses: everest/action-s3-cache@v2
   with:
     action: get
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -45,7 +50,7 @@ GitHub Action that allows you to cache build artifacts to S3
 
 ```yml
 - name: Clear cache
-  uses: thiagosantosleite/action-s3-cache@v1
+  uses: everest/action-s3-cache@v2
   with:
     action: delete
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -65,7 +70,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   uses: actions/checkout@v2
 
 - name: Retrieve cache
-  uses: thiagosantosleite/action-s3-cache@v1
+  uses: everest/action-s3-cache@v2
   with:
     action: get
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -78,7 +83,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   run: yarn
 
 - name: Save cache
-  uses: thiagosantosleite/action-s3-cache@v1
+  uses: everest/action-s3-cache@v2
   with:
     action: put
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
