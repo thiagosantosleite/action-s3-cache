@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func Tar(filename string, artifacts []string) error {
@@ -36,7 +35,7 @@ func Tar(filename string, artifacts []string) error {
 				}
 
 				// for symbolic link only add to the tar file list
-				link := fi.Name()
+				link := file
 				if fi.Mode()&os.ModeSymlink != 0 {
 					var err error
 					link, err = os.Readlink(file)
@@ -50,9 +49,7 @@ func Tar(filename string, artifacts []string) error {
 				if err != nil {
 					return err
 				}
-
-				// update the name to correctly reflect the desired destination when untaring
-				header.Name = strings.TrimPrefix(strings.Replace(file, match, "", -1), string(filepath.Separator))
+				header.Name = file
 
 				// write the header
 				if err := tw.WriteHeader(header); err != nil {
@@ -87,7 +84,6 @@ func Tar(filename string, artifacts []string) error {
 
 func Untar(filename string) error {
 	f, err := os.Open(filename)
-	dst := "."
 
 	if err != nil {
 		return err
@@ -121,7 +117,7 @@ func Untar(filename string) error {
 		}
 
 		// the target location where the dir/file should be created
-		target := filepath.Join(dst, header.Name)
+		target := header.Name
 
 		// check the file type
 		switch header.Typeflag {
