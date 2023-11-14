@@ -12,7 +12,7 @@ func main() {
 		Action:    os.Getenv("ACTION"),
 		Bucket:    os.Getenv("BUCKET"),
 		S3Class:   os.Getenv("S3_CLASS"),
-		Key:       fmt.Sprintf("%s.tgz", os.Getenv("KEY")),
+		Key:       fmt.Sprintf("%s-%s.tgz", os.Getenv("KEY"), os.Getenv("ARCH")),
 		Artifacts: strings.Split(strings.TrimSpace(os.Getenv("ARTIFACTS")), "\n"),
 	}
 
